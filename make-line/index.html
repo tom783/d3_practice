@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style> /* set the CSS */
+
+    body { font: 12px Arial;}
+    
+    path { 
+        stroke: steelblue;
+        stroke-width: 2;
+        fill: none;
+    }
+    
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: grey;
+        stroke-width: 1;
+        shape-rendering: crispEdges;
+    }
+    
+    div.tooltip {	
+        position: absolute;			
+        text-align: center;			
+        width: 60px;					
+        height: 28px;					
+        padding: 2px;				
+        font: 12px sans-serif;		
+        background: lightsteelblue;	
+        border: 0px;		
+        border-radius: 8px;			
+        pointer-events: none;			
+    }
+    
+    </style>
+</head>
+<body>
+  <div class="chart-custom"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.5.0/d3.min.js" integrity="sha512-0XfwGD1nxplHpehcSVI7lY+m/5L37PNHDt+DOc7aLFckwPXjnjeA1oeNbru7YeI4VLs9i+ADnnHEhP69C9CqTA==" crossorigin="anonymous"></script>
+  <script type="text/javascript">
+    let chartMargin = {
+      top: 30,
+      right: 30,
+      bottom: 30,
+      left: 30
+    }
+    let viewPort = {
+      width: 1200,
+      height: 800
+    }
+    let chartWidth = viewPort.width - chartMargin.right - chartMargin.left;
+    let chartHeight = viewPort.height - chartMargin.top - chartMargin.bottom;
+
+    let x = d3.scaleUtc().range([0, chartWidth]);
+    let y = d3.scaleLinear().range([chartHeight, 0]);
+
+    // let xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5);
+    let xAxis = g => g.call(d3.axisBottom(x).ticks(5).tickSizeOuter(0));
+    // let yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
+    let yAxis = g => g.call(d3.axisLeft(y));
+
+    // let valueLine = d3.svg.line().x(data => x(data.date)).y(data => y(data.value));
+    let valueLine = d3.line().x(data => x(data.date)).y(data => y(data.value));
+
+    let svg = d3.select(".chart-custom").append("svg")
+                .attr("width", viewPort.width)
+                .attr("height", viewPort.height)
+                .append("g")
+                  .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
+      
+    d3.json("data.json", result => {
+      let parseData = d3.time.format("%Y-%m-%d").parse;
+      result.data.forEach(d => {
+        d.date = parseData(d.date);
+      });
+      const data = result.data;
+      x.domain(d3.extent(data, d => d.date)); // 기간은 최소값을 임의로 설정하기 힘들기 때문에 데이터 상에서 최소, 최대값을 찾기위해 extent 사용
+      y.domain([0, d3.max(data, d => d.value)]); // 값은 최소값은 임의로 설정이 가능하고, 값의 최대값만 찾으면 되기 때문에 max 사용
+      svg.append("path")
+          .attr("class", "line")
+          .attr("fill", "none")
+          .attr("d", valueLine(data));
+      
+      // Add the X Axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + chartHeight + ")")
+        .call(xAxis);
+
+    // Add the Y Axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+    })
+
+  </script>
+</body>
+</html>
